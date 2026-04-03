@@ -14,7 +14,8 @@ import { apiAttributesToPrisma, attributeSchema, userSelectFields } from '../../
 
 enum Sort {
   OLDEST = 'oldest',
-  NEWEST = 'newest'
+  NEWEST = 'newest',
+  POPULAR = 'popular'
 }
 
 const basePostSchema = {
@@ -124,6 +125,14 @@ export class PostController {
       AND: apiAttributesToPrisma(query.attributes)
     };
 
+    const orderBy = query.sort === Sort.POPULAR ? {
+      reactions: {
+        _count: Prisma.SortOrder.desc
+      }
+    } : {
+      created: query.sort === Sort.OLDEST ? Prisma.SortOrder.asc : Prisma.SortOrder.desc
+    };
+
     const res = await this.db.getClient(params.tenantId).$transaction([
       this.db.getClient(params.tenantId).post.findMany({
         include: {
@@ -136,14 +145,12 @@ export class PostController {
           recipientGroup: true,
           reactions: true,
           _count: {
-            select: { children: true }
+            select: { children: true , reactions: true }
           }
         },
         skip: query.skip,
         take: query.take,
-        orderBy: {
-          created: query.sort === Sort.OLDEST ? Prisma.SortOrder.asc : Prisma.SortOrder.desc
-        },
+        orderBy: orderBy,
         where
       }),
       this.db.getClient(params.tenantId).post.count({where})
@@ -171,8 +178,10 @@ export class PostController {
         recipientGroup: true,
         reactions: true,
         _count: {
-          select: { children: true }
-        }
+          select: { children: true},
+          
+        },
+       
       },
       where: { id: params.postId }
     });
