@@ -50,7 +50,7 @@ export class DB {
             this.clients.set(tenantID, client);
             return client;
         }
-        throw new Error('Invalid tenant ID');
+        throw new Error('Invalid tenant ID : '+tenantID);
     }
     
 }
